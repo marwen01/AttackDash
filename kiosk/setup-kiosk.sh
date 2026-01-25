@@ -1,26 +1,39 @@
 #!/bin/bash
-# Raspberry Pi Zero 2 W Kiosk Setup for AttackDash
+# Raspberry Pi Kiosk Setup for AttackDash
+# Tested on Pi 3B+ and Pi Zero 2 W
 # Run as: sudo bash setup-kiosk.sh
 
 DASHBOARD_URL="http://docker.lexbit.se:8127/"
-KIOSK_USER="pi"
+KIOSK_USER="${SUDO_USER:-pi}"
 
 echo "=== AttackDash Kiosk Setup ==="
+echo "Kiosk user: $KIOSK_USER"
+
+# Detect config.txt location (newer Pi OS uses /boot/firmware/)
+if [ -f /boot/firmware/config.txt ]; then
+    BOOT_CONFIG="/boot/firmware/config.txt"
+    CMDLINE="/boot/firmware/cmdline.txt"
+else
+    BOOT_CONFIG="/boot/config.txt"
+    CMDLINE="/boot/cmdline.txt"
+fi
+echo "Boot config: $BOOT_CONFIG"
 
 # Update system
 echo "Updating system..."
 apt-get update && apt-get upgrade -y
 
-# Install minimal X environment and Chromium
+# Install minimal X environment and Firefox
 echo "Installing required packages..."
 apt-get install -y --no-install-recommends \
     xserver-xorg \
     x11-xserver-utils \
     xinit \
     openbox \
-    chromium-browser \
+    firefox-esr \
     unclutter \
-    sed
+    xdotool \
+    curl
 
 # Create kiosk startup script
 echo "Creating kiosk startup script..."
@@ -30,6 +43,7 @@ cat > /home/$KIOSK_USER/kiosk.sh << 'KIOSKEOF'
 DASHBOARD_URL="http://docker.lexbit.se:8127/"
 MAX_RETRIES=30
 RETRY_DELAY=5
+export DISPLAY=:0
 
 # Wait for network
 wait_for_network() {
@@ -73,24 +87,11 @@ unclutter -idle 0.5 -root &
 wait_for_network
 wait_for_dashboard
 
-# Start Chromium in kiosk mode with auto-restart on crash
+# Start Firefox in kiosk mode with auto-restart on crash
 while true; do
-    chromium-browser \
-        --kiosk \
-        --noerrdialogs \
-        --disable-infobars \
-        --disable-session-crashed-bubble \
-        --disable-restore-session-state \
-        --disable-features=TranslateUI \
-        --disable-pinch \
-        --overscroll-history-navigation=0 \
-        --check-for-update-interval=31536000 \
-        --disable-component-update \
-        --autoplay-policy=no-user-gesture-required \
-        --incognito \
-        "$DASHBOARD_URL"
+    firefox-esr --kiosk "$DASHBOARD_URL"
 
-    echo "Chromium crashed or closed, restarting in 5 seconds..."
+    echo "Firefox crashed or closed, restarting in 5 seconds..."
     sleep 5
 done
 KIOSKEOF
@@ -135,19 +136,40 @@ chown $KIOSK_USER:$KIOSK_USER /home/$KIOSK_USER/.bash_profile
 
 # Disable screen blanking in boot config
 echo "Disabling screen blanking..."
-if ! grep -q "consoleblank=0" /boot/cmdline.txt; then
-    sed -i 's/$/ consoleblank=0/' /boot/cmdline.txt
+if [ -f "$CMDLINE" ] && ! grep -q "consoleblank=0" "$CMDLINE"; then
+    sed -i 's/$/ consoleblank=0/' "$CMDLINE"
 fi
 
-# Optional: Set GPU memory for smoother graphics
+# Configure display driver - use fkms for better HDMI compatibility
+echo "Configuring display driver..."
+if grep -q "dtoverlay=vc4-kms-v3d" "$BOOT_CONFIG"; then
+    sed -i 's/dtoverlay=vc4-kms-v3d/dtoverlay=vc4-fkms-v3d/' "$BOOT_CONFIG"
+    echo "Changed vc4-kms-v3d to vc4-fkms-v3d for better HDMI compatibility"
+fi
+
+# Force HDMI output
+echo "Configuring HDMI..."
+if ! grep -q "hdmi_force_hotplug" "$BOOT_CONFIG"; then
+    echo "hdmi_force_hotplug=1" >> "$BOOT_CONFIG"
+fi
+
+if ! grep -q "hdmi_group" "$BOOT_CONFIG"; then
+    echo "hdmi_group=1" >> "$BOOT_CONFIG"
+fi
+
+if ! grep -q "hdmi_mode" "$BOOT_CONFIG"; then
+    echo "hdmi_mode=16" >> "$BOOT_CONFIG"
+fi
+
+# Set GPU memory for smoother graphics
 echo "Configuring GPU memory..."
-if ! grep -q "gpu_mem" /boot/config.txt; then
-    echo "gpu_mem=128" >> /boot/config.txt
+if ! grep -q "gpu_mem" "$BOOT_CONFIG"; then
+    echo "gpu_mem=128" >> "$BOOT_CONFIG"
 fi
 
-# Optional: Disable underscan/overscan
-if ! grep -q "disable_overscan" /boot/config.txt; then
-    echo "disable_overscan=1" >> /boot/config.txt
+# Disable underscan/overscan
+if ! grep -q "disable_overscan" "$BOOT_CONFIG"; then
+    echo "disable_overscan=1" >> "$BOOT_CONFIG"
 fi
 
 echo ""

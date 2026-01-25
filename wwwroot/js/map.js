@@ -6,12 +6,14 @@ function initAttackMap(elementId, markers) {
 
     // Initialize the map centered on the world
     map = L.map(elementId, {
-        center: [30, 0],
-        zoom: 2,
-        minZoom: 2,
+        center: [30, 10],
+        zoom: 3,
+        minZoom: 3,
         maxZoom: 8,
         zoomControl: false,
-        attributionControl: false
+        attributionControl: false,
+        maxBounds: [[-60, -180], [85, 180]],
+        maxBoundsViscosity: 1.0
     });
 
     // Dark map tiles (CartoDB Dark Matter)
