@@ -1,0 +1,400 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Fira+Code:wght@400;500;600&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --jade: #008f6b;
+    --jade-light: #00a878;
+    --jade-dark: #006b50;
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #111111;
+    --bg-panel: #0d1117;
+    --bg-card: #141419;
+    --bg-card-hover: #1a1a22;
+    --text-primary: #e0e0e0;
+    --text-secondary: #888899;
+    --text-green: #00c06a;
+    --accent-warning: #e69500;
+    --accent-danger: #dd4444;
+    --border-color: #1e1e28;
+    --border-highlight: #008f6b66;
+    --accent-glow: 0 0 8px #008f6b70, 0 0 16px #008f6b30;
+}
+
+html, body {
+    height: 100%;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Fira Code', 'Consolas', monospace;
+    overflow: hidden;
+}
+
+.dashboard-container {
+    height: 100vh;
+    width: 100vw;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    height: 100vh;
+    gap: 0;
+}
+
+/* Map Section */
+.map-section {
+    position: relative;
+    height: 100%;
+}
+
+.attack-map {
+    height: 100%;
+    width: 100%;
+    background: var(--bg-panel);
+}
+
+.map-overlay {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.map-overlay h1 {
+    font-family: 'VT323', monospace;
+    font-size: 2.2rem;
+    font-weight: 400;
+    color: var(--jade);
+    text-shadow: var(--accent-glow);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 168, 120, 0.1);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--jade);
+    border: 1px solid var(--jade);
+    box-shadow: var(--accent-glow);
+    font-family: 'VT323', monospace;
+    letter-spacing: 2px;
+}
+
+.pulse {
+    width: 10px;
+    height: 10px;
+    background: var(--jade);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 10px var(--jade);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); box-shadow: 0 0 5px var(--jade); }
+    50% { opacity: 0.6; transform: scale(1.3); box-shadow: 0 0 15px var(--jade); }
+    100% { opacity: 1; transform: scale(1); box-shadow: 0 0 5px var(--jade); }
+}
+
+/* Stats Panel */
+.stats-panel {
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--jade);
+    box-shadow: var(--accent-glow);
+}
+
+.stat-card.primary {
+    border-color: var(--jade);
+    background: linear-gradient(135deg, rgba(0, 168, 120, 0.15), transparent);
+    box-shadow: inset 0 0 20px rgba(0, 168, 120, 0.1);
+}
+
+.stat-card.highlight {
+    border-color: var(--accent-warning);
+    background: linear-gradient(135deg, rgba(255, 165, 0, 0.1), transparent);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    width: 50px;
+    text-align: center;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-family: 'VT323', monospace;
+    font-size: 2.2rem;
+    font-weight: 400;
+    color: var(--jade-light);
+    line-height: 1.2;
+    text-shadow: 0 0 10px rgba(0, 168, 120, 0.5);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-trend {
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    font-weight: 400;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.stat-trend.up {
+    color: var(--accent-danger);
+    background: rgba(255, 68, 68, 0.15);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.stat-trend.down {
+    color: var(--jade);
+    background: rgba(0, 168, 120, 0.15);
+    border: 1px solid rgba(0, 168, 120, 0.3);
+}
+
+/* Recent Attacks */
+.recent-attacks {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    flex: 1;
+    min-height: 200px;
+    overflow: hidden;
+}
+
+.recent-attacks h3,
+.country-breakdown h3 {
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    color: var(--jade);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.attack-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.attack-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-family: 'Fira Code', monospace;
+    transition: all 0.3s ease;
+    border-left: 2px solid transparent;
+}
+
+.attack-item:hover {
+    border-left-color: var(--jade);
+    background: var(--bg-card-hover);
+}
+
+.attack-item.new {
+    background: rgba(0, 168, 120, 0.15);
+    border-left: 3px solid var(--jade);
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.attack-country {
+    color: var(--jade);
+    font-weight: 600;
+    font-size: 0.75rem;
+    min-width: 24px;
+}
+
+.attack-ip {
+    flex: 1;
+    color: var(--text-primary);
+}
+
+.attack-port {
+    color: var(--accent-warning);
+}
+
+.attack-time {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+}
+
+/* Country Breakdown */
+.country-breakdown {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.country-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.country-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.country-name {
+    width: 100px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bar-container {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--jade-dark), var(--jade), var(--jade-light));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px rgba(0, 168, 120, 0.4);
+}
+
+.country-count {
+    width: 50px;
+    text-align: right;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--jade-light);
+}
+
+/* Leaflet customizations */
+.leaflet-container {
+    background: var(--bg-panel) !important;
+}
+
+.leaflet-control-attribution {
+    display: none !important;
+}
+
+.leaflet-control-zoom {
+    display: none !important;
+}
+
+.attack-marker {
+    background: radial-gradient(circle, var(--jade), transparent);
+    border-radius: 50%;
+    animation: markerPulse 2s infinite;
+}
+
+@keyframes markerPulse {
+    0% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.5); }
+    100% { opacity: 0.8; transform: scale(1); }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--jade-dark);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--jade);
+}
+
+/* Responsive for smaller screens */
+@media (max-width: 1200px) {
+    .dashboard {
+        grid-template-columns: 1fr 320px;
+    }
+}
+
+@media (max-width: 900px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+        grid-template-rows: 60vh 1fr;
+    }
+
+    .stats-panel {
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .stat-card {
+        flex: 1 1 45%;
+    }
+
+    .recent-attacks,
+    .country-breakdown {
+        flex: 1 1 100%;
+    }
+}

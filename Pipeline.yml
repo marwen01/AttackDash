@@ -1,0 +1,42 @@
+---
+resources:
+  - name: git_attackdash
+    type: git
+    source:
+      uri: https://github.com/marwen01/AttackDash.git
+      username: marwen01
+      icon: github
+      password: ((github-token))
+      branch: master
+
+  - name: reg_attackdash
+    type: registry-image
+    icon: docker
+    source:
+      repository: 192.168.100.22:5000/attackdash
+      tag: latest
+
+jobs:
+- name: build-and-push
+  plan:
+  - get: git_attackdash
+  - task: build-task-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: concourse/oci-build-task
+          tag: "0.11.0"
+      inputs:
+      - name: git_attackdash
+      outputs:
+      - name: image
+      params:
+        CONTEXT: git_attackdash
+      run:
+        path: build
+  - put: reg_attackdash
+    params:
+      image: image/image.tar
