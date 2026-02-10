@@ -6,7 +6,7 @@ resources:
     source:
       uri: https://github.com/marwen01/AttackDash.git
       username: marwen01
-      password: ((github-pat))
+      password: ((password here))
       branch: master
 
   - name: reg_attackdash
