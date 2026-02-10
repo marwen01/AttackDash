@@ -2,11 +2,11 @@
 resources:
   - name: git_attackdash
     type: git
+    icon: github
     source:
       uri: https://github.com/marwen01/AttackDash.git
       username: marwen01
-      icon: github
-      password: ((github-token))
+      password: ((github-pat))
       branch: master
 
   - name: reg_attackdash
