@@ -1,0 +1,203 @@
+@using AttackDash.Services
+@using AttackDash.Models
+@using ApexCharts
+@inject StockService StockService
+@implements IDisposable
+
+<div class="stock-dashboard">
+    <div class="stock-header">
+        <h1>Market Overview</h1>
+        <span class="stock-time">@DateTime.Now.ToString("HH:mm") CET</span>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="stock-loading">
+            <div class="loading-spinner"></div>
+            <span>Loading market data...</span>
+        </div>
+    }
+    else
+    {
+        <!-- Index Cards -->
+        <div class="index-grid">
+            @foreach (var index in _indices)
+            {
+                <div class="index-card">
+                    <div class="index-name">@index.Name</div>
+                    <div class="index-price">@index.Price.ToString("N2")</div>
+                    <div class="index-change @(index.IsPositive ? "positive" : "negative")">
+                        @(index.IsPositive ? "\u25B2" : "\u25BC") @index.ChangePercent.ToString("F2")%
+                    </div>
+                    @if (index.IntradayData.Any())
+                    {
+                        <div class="index-sparkline">
+                            <ApexChart TItem="StockCandle"
+                                       Options="_sparklineOptions"
+                                       Height="60">
+                                <ApexPointSeries TItem="StockCandle"
+                                                 Items="index.IntradayData"
+                                                 SeriesType="SeriesType.Line"
+                                                 XValue="@(c => FormatTime(c))"
+                                                 YValue="@(c => c.Close)"
+                                                 Color="@(index.IsPositive ? "#00a878" : "#dd4444")" />
+                            </ApexChart>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Stock Charts -->
+        <div class="stock-grid">
+            @foreach (var stock in _stocks)
+            {
+                <div class="stock-chart-panel">
+                    <div class="stock-chart-header">
+                        <span class="stock-chart-name">@stock.Name</span>
+                        <span class="stock-chart-price">@stock.Price.ToString("F2") @stock.Currency</span>
+                        <span class="stock-chart-change @(stock.IsPositive ? "positive" : "negative")">
+                            @(stock.IsPositive ? "\u25B2" : "\u25BC") @stock.ChangePercent.ToString("F2")%
+                        </span>
+                    </div>
+                    @if (stock.IntradayData.Any())
+                    {
+                        <ApexChart TItem="StockCandle"
+                                   Options="GetAreaOptions(stock.IsPositive)"
+                                   Height="180">
+                            <ApexPointSeries TItem="StockCandle"
+                                             Items="stock.IntradayData"
+                                             SeriesType="SeriesType.Area"
+                                             XValue="@(c => FormatTime(c))"
+                                             YValue="@(c => c.Close)"
+                                             Color="@(stock.IsPositive ? "#00a878" : "#dd4444")" />
+                        </ApexChart>
+                    }
+                    else
+                    {
+                        <div class="stock-no-data">No intraday data available</div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<StockQuote> _indices = new();
+    private List<StockQuote> _stocks = new();
+    private bool _loading = true;
+    private System.Threading.Timer? _refreshTimer;
+
+    private ApexChartOptions<StockCandle> _sparklineOptions = new()
+    {
+        Chart = new Chart
+        {
+            Sparkline = new ChartSparkline { Enabled = true },
+            Background = "transparent"
+        },
+        Stroke = new Stroke { Width = 2, Curve = Curve.Smooth },
+        Tooltip = new Tooltip { Enabled = false },
+        Theme = new Theme { Mode = Mode.Dark }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            try
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadData();
+                    StateHasChanged();
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Stock refresh error: {ex.Message}");
+            }
+        }, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            var indicesTask = StockService.GetIndicesAsync();
+            var stocksTask = StockService.GetStocksAsync();
+            await Task.WhenAll(indicesTask, stocksTask);
+
+            _indices = indicesTask.Result;
+            _stocks = stocksTask.Result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading stock data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private ApexChartOptions<StockCandle> GetAreaOptions(bool isPositive)
+    {
+        var color = isPositive ? "#00a878" : "#dd4444";
+        return new ApexChartOptions<StockCandle>
+        {
+            Chart = new Chart
+            {
+                Background = "transparent",
+                Toolbar = new Toolbar { Show = false }
+            },
+            Stroke = new Stroke { Width = 2, Curve = Curve.Smooth },
+            Fill = new Fill
+            {
+                Type = new List<FillType> { FillType.Gradient },
+                Gradient = new FillGradient
+                {
+                    ShadeIntensity = 1,
+                    OpacityFrom = 0.45,
+                    OpacityTo = 0.05,
+                    Stops = new List<double> { 0, 100 }
+                }
+            },
+            Grid = new Grid
+            {
+                BorderColor = "#1e1e28",
+                StrokeDashArray = 3
+            },
+            Xaxis = new XAxis
+            {
+                Labels = new XAxisLabels
+                {
+                    Show = true,
+                    Style = new AxisLabelStyle { Colors = "#888899", FontSize = "10px" }
+                },
+                AxisTicks = new AxisTicks { Show = false }
+            },
+            Yaxis = new List<YAxis>
+            {
+                new YAxis
+                {
+                    Labels = new YAxisLabels
+                    {
+                        Style = new AxisLabelStyle { Colors = "#888899", FontSize = "10px" }
+                    }
+                }
+            },
+            Tooltip = new Tooltip { Enabled = false },
+            Theme = new Theme { Mode = Mode.Dark }
+        };
+    }
+
+    private static string FormatTime(StockCandle c) => c.Timestamp.ToString("HH:mm");
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+}

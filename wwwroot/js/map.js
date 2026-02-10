@@ -7,8 +7,8 @@ function initAttackMap(elementId, markers) {
     // Initialize the map centered on the world
     map = L.map(elementId, {
         center: [30, 10],
-        zoom: 3,
-        minZoom: 3,
+        zoom: 2.7,
+        minZoom: 2,
         maxZoom: 8,
         zoomControl: false,
         attributionControl: false,
@@ -119,6 +119,15 @@ function addAttackLine(fromLat, fromLng, toLat, toLng) {
     setTimeout(() => {
         map.removeLayer(line);
     }, 3000);
+}
+
+function disposeAttackMap() {
+    if (map) {
+        map.remove();
+        map = null;
+        markersLayer = null;
+        console.log("Attack map disposed");
+    }
 }
 
 // Add CSS for pulse animation

@@ -1,316 +1,91 @@
 @page "/"
-@using AttackDash.Services
-@using AttackDash.Models
 @using static Microsoft.AspNetCore.Components.Web.RenderMode
-@inject LokiService LokiService
-@inject IJSRuntime JS
 @rendermode InteractiveServer
+@implements IDisposable
 
 <PageTitle>Attack Dashboard</PageTitle>
 
-<div class="dashboard">
-    <!-- Map Section -->
-    <div class="map-section">
-        <div id="attackMap" class="attack-map"></div>
-        <div class="map-overlay">
-            <h1>Network Threat Monitor</h1>
-            <div class="live-indicator">
-                <span class="pulse"></span>
-                LIVE
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Panel -->
-    <div class="stats-panel">
-        <div class="stat-card primary">
-            <div class="stat-icon">🌍</div>
-            <div class="stat-content">
-                <div class="stat-value">@_stats.TotalCountries</div>
-                <div class="stat-label">Countries</div>
-            </div>
+<div class="dashboard-container">
+    @if (_isLooping)
+    {
+        <div class="page-wrapper @(_fadeClass)">
+            @switch (_currentPage)
+            {
+                case 0:
+                    <AttackDashboard />
+                    break;
+                case 1:
+                    <StockDashboard />
+                    break;
+                case 2:
+                    <WeatherDashboard />
+                    break;
+            }
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon">🛡️</div>
-            <div class="stat-content">
-                <div class="stat-value">@_stats.AttacksLastHour.ToString("N0")</div>
-                <div class="stat-label">Blocked (1h)</div>
-            </div>
-            <div class="stat-trend @(_stats.TrendUp ? "up" : "down")">
-                @(_stats.TrendUp ? "↑" : "↓") @Math.Abs(_stats.TrendPercentage).ToString("F0")%
-            </div>
+        <div class="page-indicators">
+            @for (int i = 0; i < _totalPages; i++)
+            {
+                var idx = i;
+                <span class="page-dot @(idx == _currentPage ? "active" : "")"></span>
+            }
         </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">📊</div>
-            <div class="stat-content">
-                <div class="stat-value">@_stats.TotalAttacks.ToString("N0")</div>
-                <div class="stat-label">Blocked (24h)</div>
-            </div>
-        </div>
-
-        <div class="stat-card highlight">
-            <div class="stat-icon">🎯</div>
-            <div class="stat-content">
-                <div class="stat-value">@_stats.TopCountry</div>
-                <div class="stat-label">Top Source (@_stats.TopCountryCount)</div>
-            </div>
-        </div>
-
-        <!-- Recent Attacks List -->
-        <div class="recent-attacks">
-            <h3>Recent Blocked Connections</h3>
-            <div class="attack-list">
-                @foreach (var attack in _recentAttacks.Take(14))
-                {
-                    <div class="attack-item @(IsNew(attack) ? "new" : "")">
-                        <span class="attack-country" title="@attack.Country">@attack.CountryCode</span>
-                        <span class="attack-ip">@(attack.SourceIp ?? "Unknown")</span>
-                        <span class="attack-port">@GetServiceName(attack.DestinationPort)</span>
-                        <span class="attack-time">@FormatTime(attack.Timestamp)</span>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <!-- Country Breakdown -->
-        <div class="country-breakdown">
-            <h3>Top Attack Sources</h3>
-            <div class="country-bars">
-                @foreach (var country in _stats.CountryBreakdown.Take(6))
-                {
-                    var maxCount = _stats.CountryBreakdown.FirstOrDefault()?.Count ?? 1;
-                    var percentage = (country.Count / (double)maxCount) * 100;
-                    <div class="country-bar">
-                        <span class="country-name">@country.Country</span>
-                        <div class="bar-container">
-                            <div class="bar-fill" style="width: @percentage%"></div>
-                        </div>
-                        <span class="country-count">@country.Count</span>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
+    }
+    else
+    {
+        <AttackDashboard />
+    }
 </div>
 
 @code {
-    private AttackStats _stats = new();
-    private List<RecentAttack> _recentAttacks = new();
-    private System.Threading.Timer? _refreshTimer;
-    private DateTime _lastUpdate = DateTime.MinValue;
+    [SupplyParameterFromQuery(Name = "loop")]
+    public string? Loop { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
-        await RefreshData();
-    }
+    [SupplyParameterFromQuery(Name = "time")]
+    public int Time { get; set; }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private bool _isLooping;
+    private int _currentPage = 0;
+    private const int _totalPages = 3;
+    private string _fadeClass = "fade-in";
+    private System.Threading.Timer? _rotationTimer;
+    private int _intervalSeconds = 120;
+
+    protected override void OnInitialized()
     {
-        if (firstRender)
+        _isLooping = Loop != null;
+        if (Time > 0) _intervalSeconds = Time;
+
+        if (_isLooping)
         {
-            // Initialize the map first
-            await InitializeMap();
-
-            // Refresh data and update markers immediately
-            await RefreshData();
-            await UpdateMapMarkers();
-            StateHasChanged();
-
-            // Set up auto-refresh every 10 seconds
-            _refreshTimer = new System.Threading.Timer(async _ =>
+            _rotationTimer = new System.Threading.Timer(async _ =>
             {
                 try
                 {
                     await InvokeAsync(async () =>
                     {
-                        await RefreshData();
-                        await UpdateMapMarkers();
+                        // Fade out
+                        _fadeClass = "fade-out";
+                        StateHasChanged();
+
+                        await Task.Delay(400);
+
+                        // Switch page
+                        _currentPage = (_currentPage + 1) % _totalPages;
+                        _fadeClass = "fade-in";
                         StateHasChanged();
                     });
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Refresh error: {ex.Message}");
+                    Console.WriteLine($"Rotation error: {ex.Message}");
                 }
-            }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+            }, null, TimeSpan.FromSeconds(_intervalSeconds), TimeSpan.FromSeconds(_intervalSeconds));
         }
-    }
-
-    private async Task RefreshData()
-    {
-        _stats = await LokiService.GetAttackStatsAsync();
-        _recentAttacks = await LokiService.GetRecentAttacksAsync(20);
-        _lastUpdate = DateTime.Now;
-    }
-
-    private async Task InitializeMap()
-    {
-        try
-        {
-            var markers = _stats.MapMarkers;
-            object markerList = markers != null && markers.Any()
-                ? markers.Select(c => new { lat = c.Latitude, lng = c.Longitude, country = c.Country, count = c.Count }).ToList()
-                : new List<object>();
-
-            await JS.InvokeVoidAsync("initAttackMap", "attackMap", markerList);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error initializing map: {ex.Message}");
-        }
-    }
-
-    private async Task UpdateMapMarkers()
-    {
-        try
-        {
-            var markers = _stats.MapMarkers;
-            object markerList = markers != null && markers.Any()
-                ? markers.Select(c => new { lat = c.Latitude, lng = c.Longitude, country = c.Country, count = c.Count }).ToList()
-                : new List<object>();
-
-            await JS.InvokeVoidAsync("updateMarkers", markerList);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating markers: {ex.Message}");
-        }
-    }
-
-    private bool IsNew(RecentAttack attack) => (DateTime.Now - attack.Timestamp).TotalSeconds < 30;
-
-    private string FormatTime(DateTime time)
-    {
-        var diff = DateTime.Now - time;
-        if (diff.TotalSeconds < 60) return $"{(int)diff.TotalSeconds}s ago";
-        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
-        return time.ToString("HH:mm");
-    }
-
-    private static readonly Dictionary<int, string> _services = new()
-    {
-        // Remote Access
-        { 21, "FTP" },
-        { 22, "SSH" },
-        { 23, "Telnet" },
-        { 2022, "SSH-Alt" },
-        { 2222, "SSH-Alt" },
-        { 3389, "RDP" },
-        { 5900, "VNC" },
-        { 5901, "VNC" },
-        { 5902, "VNC" },
-        { 5555, "ADB" },
-
-        // Web
-        { 80, "HTTP" },
-        { 443, "HTTPS" },
-        { 8000, "HTTP-Alt" },
-        { 8080, "HTTP-Alt" },
-        { 8081, "HTTP-Alt" },
-        { 8443, "HTTPS-Alt" },
-        { 8888, "HTTP-Alt" },
-        { 9000, "HTTP-Alt" },
-        { 9443, "HTTPS-Alt" },
-
-        // Mail
-        { 25, "SMTP" },
-        { 110, "POP3" },
-        { 143, "IMAP" },
-        { 465, "SMTPS" },
-        { 587, "SMTP" },
-        { 993, "IMAPS" },
-        { 995, "POP3S" },
-
-        // Databases
-        { 1433, "MSSQL" },
-        { 1521, "Oracle" },
-        { 3306, "MySQL" },
-        { 5432, "Postgres" },
-        { 5433, "Postgres" },
-        { 6543, "Postgres" },
-        { 6379, "Redis" },
-        { 6380, "Redis" },
-        { 27017, "MongoDB" },
-        { 27018, "MongoDB" },
-        { 9200, "Elastic" },
-        { 9300, "Elastic" },
-        { 11211, "Memcached" },
-        { 5984, "CouchDB" },
-
-        // Message Queues
-        { 1883, "MQTT" },
-        { 5672, "RabbitMQ" },
-        { 9092, "Kafka" },
-        { 9094, "Kafka" },
-        { 61616, "ActiveMQ" },
-        { 61617, "ActiveMQ" },
-
-        // Container/Cloud
-        { 2375, "Docker" },
-        { 2376, "Docker" },
-        { 10250, "Kubelet" },
-        { 6443, "K8s-API" },
-
-        // Proxies
-        { 1080, "SOCKS" },
-        { 3128, "Squid" },
-        { 8118, "Privoxy" },
-
-        // DNS/Network
-        { 53, "DNS" },
-        { 445, "SMB" },
-        { 137, "NetBIOS" },
-        { 138, "NetBIOS" },
-        { 139, "NetBIOS" },
-        { 161, "SNMP" },
-
-        // Gaming/Apps
-        { 25565, "Minecraft" },
-        { 27015, "Source" },
-        { 7777, "Terraria" },
-
-        // IRC/Chat
-        { 6666, "IRC" },
-        { 6667, "IRC" },
-        { 6697, "IRC-TLS" },
-
-        // Telephony/VoIP
-        { 5060, "SIP" },
-        { 5061, "SIP-TLS" },
-        { 5062, "SIP" },
-        { 5063, "SIP" },
-        { 4569, "IAX2" },
-        { 5036, "IAX" },
-        { 1719, "H.323" },
-        { 1720, "H.323" },
-        { 2000, "SCCP" },
-        { 2427, "MGCP" },
-        { 2727, "MGCP" },
-        { 3478, "STUN" },
-        { 3479, "STUN" },
-        { 5004, "RTP" },
-        { 5005, "RTCP" },
-        { 10000, "Webmin" },
-
-        // Other common targets
-        { 4444, "Metasploit" },
-        { 4443, "Pharos" },
-        { 7001, "WebLogic" },
-        { 7002, "WebLogic" },
-        { 8291, "Mikrotik" },
-        { 9001, "Tor" },
-        { 14000, "RNDC" }
-    };
-
-    private string GetServiceName(int port)
-    {
-        return _services.TryGetValue(port, out var name) ? name : $":{port}";
     }
 
     public void Dispose()
     {
-        _refreshTimer?.Dispose();
+        _rotationTimer?.Dispose();
     }
 }

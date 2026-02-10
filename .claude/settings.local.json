@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /mnt/c/Users/marti/source/repos/AttackDash log --oneline)",
+      "Bash(ssh martin@192.168.100.5 \"echo ''=== HOSTNAME ==='' && hostname && echo ''=== OS ==='' && cat /etc/os-release 2>/dev/null | head -5 && echo ''=== BLUETOOTH STATUS ==='' && systemctl status bluetooth 2>/dev/null | head -10 && echo ''=== BT INSTALLED ==='' && which bluetoothctl 2>/dev/null && echo ''=== AUDIO ==='' && pactl list sinks short 2>/dev/null || pipewire --version 2>/dev/null || echo ''no pulseaudio/pipewire'' && echo ''=== RUNNING SERVICES ==='' && systemctl list-units --type=service --state=running --no-pager | grep -iE ''kiosk|chrome|chromium|xorg|display|pulse|pipe|blue|attack'' && echo ''=== ACTIVE DISPLAY ==='' && DISPLAY=:0 xdotool getactivewindow getwindowname 2>/dev/null || echo ''could not get active window''\")",
+      "Bash(ssh:*)",
+      "WebFetch(domain:opendata-download-metfcst.smhi.se)",
+      "WebFetch(domain:opendata-download-metobs.smhi.se)",
+      "WebFetch(domain:www.nuget.org)",
+      "WebFetch(domain:api.sunrise-sunset.org)",
+      "WebSearch",
+      "WebFetch(domain:opendata.smhi.se)",
+      "WebFetch(domain:query1.finance.yahoo.com)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet build:*)"
+    ]
+  }
+}

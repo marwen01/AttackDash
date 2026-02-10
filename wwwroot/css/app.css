@@ -369,6 +369,538 @@ html, body {
     background: var(--jade);
 }
 
+/* =============================================
+   PAGE ROTATION / TRANSITIONS
+   ============================================= */
+.dashboard-container {
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+    overflow: hidden;
+}
+
+.page-wrapper {
+    height: 100%;
+    width: 100%;
+    transition: opacity 400ms ease;
+}
+
+.page-wrapper.fade-in {
+    opacity: 1;
+}
+
+.page-wrapper.fade-out {
+    opacity: 0;
+}
+
+.page-indicators {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 9999;
+}
+
+.page-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.page-dot.active {
+    background: var(--jade);
+    border-color: var(--jade-light);
+    box-shadow: 0 0 8px var(--jade);
+}
+
+/* Loading spinner */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--jade);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* =============================================
+   STOCK DASHBOARD
+   ============================================= */
+.stock-dashboard {
+    height: 100vh;
+    background: var(--bg-primary);
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+}
+
+.stock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stock-header h1 {
+    font-family: 'VT323', monospace;
+    font-size: 2.2rem;
+    font-weight: 400;
+    color: var(--jade);
+    text-shadow: var(--accent-glow);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.stock-time {
+    font-family: 'Fira Code', monospace;
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+.stock-loading,
+.weather-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Index cards grid */
+.index-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.index-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.index-card:hover {
+    border-color: var(--jade);
+    box-shadow: var(--accent-glow);
+}
+
+.index-name {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.index-price {
+    font-family: 'VT323', monospace;
+    font-size: 2rem;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.index-change {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.index-change.positive { color: var(--jade-light); }
+.index-change.negative { color: var(--accent-danger); }
+
+.index-sparkline {
+    margin-top: 8px;
+    height: 60px;
+}
+
+/* Stock chart panels */
+.stock-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+}
+
+.stock-chart-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.stock-chart-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.stock-chart-name {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.stock-chart-price {
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    margin-left: auto;
+}
+
+.stock-chart-change {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.stock-chart-change.positive {
+    color: var(--jade-light);
+    background: rgba(0, 168, 120, 0.15);
+}
+
+.stock-chart-change.negative {
+    color: var(--accent-danger);
+    background: rgba(255, 68, 68, 0.15);
+}
+
+.stock-no-data {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* =============================================
+   WEATHER DASHBOARD
+   ============================================= */
+.weather-dashboard {
+    height: 100vh;
+    background: var(--bg-primary);
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+}
+
+.weather-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.weather-header h1 {
+    font-family: 'VT323', monospace;
+    font-size: 2.2rem;
+    font-weight: 400;
+    color: var(--jade);
+    text-shadow: var(--accent-glow);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.weather-date {
+    font-family: 'Fira Code', monospace;
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+/* Main weather grid */
+.weather-main-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr 260px;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Current weather panel */
+.weather-current {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.weather-now-label {
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    color: var(--jade);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.weather-icon-large {
+    font-size: 4rem;
+    line-height: 1;
+}
+
+.weather-temp-large {
+    font-family: 'VT323', monospace;
+    font-size: 3.5rem;
+    color: var(--text-primary);
+    line-height: 1;
+    text-shadow: 0 0 10px rgba(0, 168, 120, 0.3);
+}
+
+.weather-desc {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.weather-details {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.weather-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.weather-detail-icon {
+    font-size: 1rem;
+    width: 24px;
+    text-align: center;
+}
+
+.weather-sun {
+    width: 100%;
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sun-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.sun-row.day-length {
+    color: var(--jade);
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+/* Forecast chart panel */
+.weather-forecast-chart {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.weather-forecast-chart h3,
+.weather-extremes h3 {
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    color: var(--jade);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Sweden extremes panel */
+.weather-extremes {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.extreme-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.extreme-card.warmest {
+    border-color: rgba(230, 149, 0, 0.3);
+    background: linear-gradient(135deg, rgba(230, 149, 0, 0.08), transparent);
+}
+
+.extreme-card.coldest {
+    border-color: rgba(68, 136, 221, 0.3);
+    background: linear-gradient(135deg, rgba(68, 136, 221, 0.08), transparent);
+}
+
+.extreme-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.extreme-station {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.extreme-temp {
+    font-family: 'VT323', monospace;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.extreme-card.warmest .extreme-temp { color: var(--accent-warning); }
+.extreme-card.coldest .extreme-temp { color: #4488dd; }
+
+.weather-no-data {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Daily forecast row */
+.daily-forecast-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+}
+
+.daily-forecast-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.daily-forecast-card.today {
+    border-color: var(--jade);
+    background: linear-gradient(135deg, rgba(0, 168, 120, 0.1), transparent);
+}
+
+.daily-name {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.daily-icon {
+    font-size: 1.8rem;
+    margin-bottom: 6px;
+}
+
+.daily-temps {
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+}
+
+.daily-min { color: #4488dd; }
+.daily-sep { color: var(--text-secondary); margin: 0 2px; }
+.daily-max { color: var(--accent-warning); }
+
+.daily-precip {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: #4488dd;
+    margin-top: 4px;
+}
+
+/* =============================================
+   APEXCHARTS DARK THEME OVERRIDES
+   ============================================= */
+.apexcharts-canvas {
+    background: transparent !important;
+}
+
+.apexcharts-text,
+.apexcharts-title-text {
+    fill: var(--text-secondary) !important;
+}
+
+.apexcharts-gridline {
+    stroke: var(--border-color) !important;
+}
+
+.apexcharts-tooltip {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.apexcharts-tooltip-title {
+    background: var(--bg-secondary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.apexcharts-xaxistooltip,
+.apexcharts-yaxistooltip {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.apexcharts-legend-text {
+    color: var(--text-secondary) !important;
+}
+
 /* Responsive for smaller screens */
 @media (max-width: 1200px) {
     .dashboard {

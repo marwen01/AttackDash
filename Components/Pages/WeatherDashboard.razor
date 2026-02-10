@@ -1,0 +1,239 @@
+@using AttackDash.Services
+@using AttackDash.Models
+@using ApexCharts
+@inject WeatherService WeatherService
+@implements IDisposable
+
+<div class="weather-dashboard">
+    <div class="weather-header">
+        <h1>Weather &mdash; T&auml;by, Stockholm</h1>
+        <span class="weather-date">@DateTime.Now.ToString("MMMM d")</span>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="weather-loading">
+            <div class="loading-spinner"></div>
+            <span>Loading weather data...</span>
+        </div>
+    }
+    else
+    {
+        <div class="weather-main-grid">
+            <!-- Current Weather -->
+            <div class="weather-current">
+                <div class="weather-now-label">NOW</div>
+                <div class="weather-icon-large">@_forecast.Current.Icon</div>
+                <div class="weather-temp-large">@_forecast.Current.Temperature.ToString("F1")&deg;C</div>
+                <div class="weather-desc">@_forecast.Current.Description</div>
+                <div class="weather-details">
+                    <div class="weather-detail-row">
+                        <span class="weather-detail-icon">&#x1F4A8;</span>
+                        <span>Wind: @_forecast.Current.WindSpeed.ToString("F0") m/s</span>
+                    </div>
+                    <div class="weather-detail-row">
+                        <span class="weather-detail-icon">&#x1F4A7;</span>
+                        <span>Humidity: @_forecast.Current.Humidity%</span>
+                    </div>
+                    <div class="weather-detail-row">
+                        <span class="weather-detail-icon">&#x2601;&#xFE0F;</span>
+                        <span>Clouds: @_forecast.Current.CloudCover%</span>
+                    </div>
+                </div>
+                <div class="weather-sun">
+                    <div class="sun-row">
+                        <span>&#x2600;&#xFE0F;</span>
+                        <span>@_forecast.Sun.Sunrise.ToString("HH:mm")</span>
+                    </div>
+                    <div class="sun-row">
+                        <span>&#x1F319;</span>
+                        <span>@_forecast.Sun.Sunset.ToString("HH:mm")</span>
+                    </div>
+                    <div class="sun-row day-length">
+                        Day: @((int)_forecast.Sun.DayLength.TotalHours)h @(_forecast.Sun.DayLength.Minutes)m
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forecast Chart -->
+            <div class="weather-forecast-chart">
+                <h3>5-Day Forecast</h3>
+                @if (_forecast.HourlyForecasts.Any())
+                {
+                    <ApexChart TItem="HourlyForecast"
+                               Options="_forecastChartOptions"
+                               Height="320">
+                        <ApexPointSeries TItem="HourlyForecast"
+                                         Items="_chartHourly"
+                                         SeriesType="SeriesType.Area"
+                                         Name="Temperature"
+                                         XValue="@(h => FormatHour(h))"
+                                         YValue="@(h => h.Temperature)"
+                                         Color="#00a878" />
+                        <ApexPointSeries TItem="HourlyForecast"
+                                         Items="_chartHourly"
+                                         SeriesType="SeriesType.Bar"
+                                         Name="Precip (mm)"
+                                         XValue="@(h => FormatHour(h))"
+                                         YValue="@(h => h.Precipitation)"
+                                         Color="#4488dd" />
+                    </ApexChart>
+                }
+            </div>
+
+            <!-- Sweden Extremes -->
+            <div class="weather-extremes">
+                <h3>Sweden Today</h3>
+                @if (_forecast.SwedenExtremes != null)
+                {
+                    <div class="extreme-card warmest">
+                        <div class="extreme-label">Warmest</div>
+                        <div class="extreme-station">@_forecast.SwedenExtremes.WarmestStation</div>
+                        <div class="extreme-temp">@_forecast.SwedenExtremes.WarmestTemp.ToString("F1")&deg;C</div>
+                    </div>
+                    <div class="extreme-card coldest">
+                        <div class="extreme-label">Coldest</div>
+                        <div class="extreme-station">@_forecast.SwedenExtremes.ColdestStation</div>
+                        <div class="extreme-temp">@_forecast.SwedenExtremes.ColdestTemp.ToString("F1")&deg;C</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="weather-no-data">No extreme data available</div>
+                }
+            </div>
+        </div>
+
+        <!-- Daily Summary Row -->
+        <div class="daily-forecast-row">
+            @foreach (var day in _forecast.DailyForecasts.Take(6))
+            {
+                <div class="daily-forecast-card @(day.Date.Date == DateTime.Today ? "today" : "")">
+                    <div class="daily-name">@(day.Date.Date == DateTime.Today ? "Today" : day.Date.ToString("ddd"))</div>
+                    <div class="daily-icon">@day.Icon</div>
+                    <div class="daily-temps">
+                        <span class="daily-min">@day.MinTemp.ToString("F0")&deg;</span>
+                        <span class="daily-sep">/</span>
+                        <span class="daily-max">@day.MaxTemp.ToString("F0")&deg;</span>
+                    </div>
+                    @if (day.TotalPrecipitation > 0)
+                    {
+                        <div class="daily-precip">@day.TotalPrecipitation.ToString("F1") mm</div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private WeatherForecast _forecast = new();
+    private List<HourlyForecast> _chartHourly = new();
+    private bool _loading = true;
+    private System.Threading.Timer? _refreshTimer;
+
+    private ApexChartOptions<HourlyForecast> _forecastChartOptions = new()
+    {
+        Chart = new Chart
+        {
+            Background = "transparent",
+            Toolbar = new Toolbar { Show = false },
+            Stacked = false
+        },
+        Stroke = new Stroke { Width = new List<double>{ 3, 0 }, Curve = Curve.Smooth },
+        Fill = new Fill
+        {
+            Type = new List<FillType> { FillType.Gradient, FillType.Solid },
+            Gradient = new FillGradient
+            {
+                ShadeIntensity = 1,
+                OpacityFrom = 0.4,
+                OpacityTo = 0.05,
+                Stops = new List<double> { 0, 100 }
+            }
+        },
+        Grid = new Grid
+        {
+            BorderColor = "#1e1e28",
+            StrokeDashArray = 3
+        },
+        Xaxis = new XAxis
+        {
+            Labels = new XAxisLabels
+            {
+                Show = true,
+                RotateAlways = true,
+                Rotate = -45,
+                Style = new AxisLabelStyle { Colors = "#888899", FontSize = "9px" }
+            },
+            AxisTicks = new AxisTicks { Show = false }
+        },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Title = new AxisTitle { Text = "°C", Style = new AxisTitleStyle { Color = "#888899" } },
+                Labels = new YAxisLabels
+                {
+                    Style = new AxisLabelStyle { Colors = "#888899", FontSize = "10px" }
+                }
+            }
+        },
+        Tooltip = new Tooltip { Enabled = false },
+        Legend = new Legend
+        {
+            Position = LegendPosition.Top,
+            Labels = new LegendLabels { Colors = "#888899" }
+        },
+        Theme = new Theme { Mode = Mode.Dark }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            try
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadData();
+                    StateHasChanged();
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Weather refresh error: {ex.Message}");
+            }
+        }, null, TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _forecast = await WeatherService.GetForecastAsync();
+            // Sample every 3 hours for chart readability
+            _chartHourly = _forecast.HourlyForecasts
+                .Where((_, i) => i % 3 == 0)
+                .Take(40)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading weather data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string FormatHour(HourlyForecast h) => h.Time.ToString("ddd HH:mm");
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+}
